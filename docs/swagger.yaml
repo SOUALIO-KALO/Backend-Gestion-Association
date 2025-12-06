@@ -13,7 +13,7 @@ info:
     name: MIT
 
 servers:
-  - url: http://localhost:5000
+  - url: http://localhost:3001
     description: Serveur de développement
   - url: https://api.gestion-associative.com
     description: Serveur de production
@@ -268,6 +268,171 @@ paths:
         401:
           description: Non authentifié
 
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Demander la réinitialisation du mot de passe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: jean@example.com
+      responses:
+        200:
+          description: Email de réinitialisation envoyé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Email invalide
+
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Réinitialiser le mot de passe avec le token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, nouveauMotDePasse]
+              properties:
+                token:
+                  type: string
+                  example: "abc123token"
+                nouveauMotDePasse:
+                  type: string
+                  format: password
+                  example: "NewPassword123!"
+      responses:
+        200:
+          description: Mot de passe réinitialisé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Token invalide ou expiré
+
+  /api/auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: Rafraîchir le token d'accès
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        200:
+          description: Nouveau token généré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  token:
+                    type: string
+                  refreshToken:
+                    type: string
+        401:
+          description: Refresh token invalide
+
+  /api/auth/change-password:
+    put:
+      tags: [Auth]
+      summary: Changer le mot de passe
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ancienMotDePasse, nouveauMotDePasse]
+              properties:
+                ancienMotDePasse:
+                  type: string
+                  format: password
+                  example: "OldPassword123!"
+                nouveauMotDePasse:
+                  type: string
+                  format: password
+                  example: "NewPassword123!"
+      responses:
+        200:
+          description: Mot de passe changé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Ancien mot de passe incorrect
+        401:
+          description: Non authentifié
+
+  /api/auth/verify:
+    get:
+      tags: [Auth]
+      summary: Vérifier la validité du token
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Token valide
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      valid:
+                        type: boolean
+                      userId:
+                        type: string
+                        format: uuid
+        401:
+          description: Token invalide ou expiré
+
   /api/membres:
     get:
       tags: [Membres]
@@ -450,6 +615,266 @@ paths:
         403:
           description: Accès refusé
 
+  /api/membres/me:
+    get:
+      tags: [Membres]
+      summary: Récupérer le profil de l'utilisateur connecté
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Profil du membre connecté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Membre"
+        401:
+          description: Non authentifié
+
+  /api/membres/export:
+    get:
+      tags: [Membres]
+      summary: Exporter les membres en CSV (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Fichier CSV des membres
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        403:
+          description: Accès refusé
+        401:
+          description: Non authentifié
+
+  /api/membres/import:
+    post:
+      tags: [Membres]
+      summary: Importer des membres depuis un CSV (Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Fichier CSV contenant les membres
+      responses:
+        200:
+          description: Import réussi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  importes:
+                    type: integer
+                  erreurs:
+                    type: array
+                    items:
+                      type: object
+        400:
+          description: Fichier invalide
+        403:
+          description: Accès refusé
+
+  /api/membres/statistiques:
+    get:
+      tags: [Membres]
+      summary: Récupérer les statistiques des membres (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Statistiques des membres
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      actifs:
+                        type: integer
+                      inactifs:
+                        type: integer
+                      bureau:
+                        type: integer
+                      nouveauxCeMois:
+                        type: integer
+        403:
+          description: Accès refusé
+        401:
+          description: Non authentifié
+
+  /api/membres/{id}/cotisations:
+    get:
+      tags: [Membres]
+      summary: Récupérer les cotisations d'un membre
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Liste des cotisations du membre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cotisation"
+        404:
+          description: Membre non trouvé
+        401:
+          description: Non authentifié
+
+  /api/membres/{id}/inscriptions:
+    get:
+      tags: [Membres]
+      summary: Récupérer les inscriptions aux événements d'un membre
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Liste des inscriptions du membre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Evenement"
+        404:
+          description: Membre non trouvé
+        401:
+          description: Non authentifié
+
+  /api/membres/{id}/statut:
+    put:
+      tags: [Membres]
+      summary: Modifier le statut d'un membre (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [statut]
+              properties:
+                statut:
+                  type: string
+                  enum: [ACTIF, INACTIF, BUREAU]
+      responses:
+        200:
+          description: Statut mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Membre"
+        404:
+          description: Membre non trouvé
+        403:
+          description: Accès refusé
+
+  /api/membres/{id}/role:
+    put:
+      tags: [Membres]
+      summary: Modifier le rôle d'un membre (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [ADMIN, MEMBRE]
+      responses:
+        200:
+          description: Rôle mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Membre"
+        404:
+          description: Membre non trouvé
+        403:
+          description: Accès refusé
+
   /api/cotisations:
     get:
       tags: [Cotisations]
@@ -530,6 +955,382 @@ paths:
                     $ref: "#/components/schemas/Cotisation"
         403:
           description: Accès refusé
+
+  /api/cotisations/{id}:
+    get:
+      tags: [Cotisations]
+      summary: Récupérer une cotisation par ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Cotisation trouvée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Cotisation"
+        404:
+          description: Cotisation non trouvée
+        401:
+          description: Non authentifié
+
+    put:
+      tags: [Cotisations]
+      summary: Mettre à jour une cotisation (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                montant:
+                  type: number
+                  format: decimal
+                modePaiement:
+                  type: string
+                  enum: [VIREMENT, ESPECES, CHEQUE, CARTE_BANCAIRE]
+                dateExpiration:
+                  type: string
+                  format: date-time
+                statut:
+                  type: string
+                  enum: [A_JOUR, EXPIRE, EN_ATTENTE]
+      responses:
+        200:
+          description: Cotisation mise à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Cotisation"
+        404:
+          description: Cotisation non trouvée
+        403:
+          description: Accès refusé
+
+    delete:
+      tags: [Cotisations]
+      summary: Supprimer une cotisation (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Cotisation supprimée
+        404:
+          description: Cotisation non trouvée
+        403:
+          description: Accès refusé
+
+  /api/cotisations/mes-cotisations:
+    get:
+      tags: [Cotisations]
+      summary: Récupérer les cotisations de l'utilisateur connecté
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des cotisations de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cotisation"
+        401:
+          description: Non authentifié
+
+  /api/cotisations/mon-statut:
+    get:
+      tags: [Cotisations]
+      summary: Obtenir le statut de cotisation de l'utilisateur connecté
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Statut de cotisation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      aJour:
+                        type: boolean
+                      derniereCotsation:
+                        $ref: "#/components/schemas/Cotisation"
+                      dateExpiration:
+                        type: string
+                        format: date-time
+        401:
+          description: Non authentifié
+
+  /api/cotisations/statistiques:
+    get:
+      tags: [Cotisations]
+      summary: Obtenir les statistiques des cotisations (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Statistiques des cotisations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      totalCotisations:
+                        type: integer
+                      montantTotal:
+                        type: number
+                      aJour:
+                        type: integer
+                      expires:
+                        type: integer
+                      enAttente:
+                        type: integer
+        403:
+          description: Accès refusé
+        401:
+          description: Non authentifié
+
+  /api/cotisations/expirees:
+    get:
+      tags: [Cotisations]
+      summary: Récupérer les cotisations expirées (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Liste des cotisations expirées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cotisation"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+        403:
+          description: Accès refusé
+        401:
+          description: Non authentifié
+
+  /api/cotisations/alertes:
+    get:
+      tags: [Cotisations]
+      summary: Récupérer les cotisations proches de l'expiration (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: jours
+          in: query
+          description: Nombre de jours avant expiration (défaut 30)
+          schema:
+            type: integer
+            default: 30
+      responses:
+        200:
+          description: Liste des cotisations proches de l'expiration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cotisation"
+        403:
+          description: Accès refusé
+        401:
+          description: Non authentifié
+
+  /api/cotisations/update-statuts:
+    post:
+      tags: [Cotisations]
+      summary: Mettre à jour les statuts des cotisations expirées (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Statuts mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  miseAJour:
+                    type: integer
+        403:
+          description: Accès refusé
+        401:
+          description: Non authentifié
+
+  /api/cotisations/{id}/recu:
+    get:
+      tags: [Cotisations]
+      summary: Générer et télécharger le reçu PDF d'une cotisation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Fichier PDF du reçu
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: Cotisation non trouvée
+        401:
+          description: Non authentifié
+
+  /api/cotisations/membre/{membreId}:
+    get:
+      tags: [Cotisations]
+      summary: Récupérer les cotisations d'un membre spécifique
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: membreId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Liste des cotisations du membre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cotisation"
+        404:
+          description: Membre non trouvé
+        401:
+          description: Non authentifié
+
+  /api/cotisations/statut/{membreId}:
+    get:
+      tags: [Cotisations]
+      summary: Vérifier le statut de cotisation d'un membre
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: membreId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Statut de cotisation du membre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      membreId:
+                        type: string
+                        format: uuid
+                      aJour:
+                        type: boolean
+                      dateExpiration:
+                        type: string
+                        format: date-time
+        404:
+          description: Membre non trouvé
+        401:
+          description: Non authentifié
 
   /api/evenements:
     get:
@@ -697,3 +1498,168 @@ paths:
           description: Événement non trouvé
         403:
           description: Accès refusé
+
+  /api/evenements/calendrier:
+    get:
+      tags: [Événements]
+      summary: Récupérer les événements pour le calendrier
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: mois
+          in: query
+          description: Mois (1-12)
+          schema:
+            type: integer
+        - name: annee
+          in: query
+          description: Année
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Événements formatés pour le calendrier
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Evenement"
+        401:
+          description: Non authentifié
+
+  /api/evenements/statistiques:
+    get:
+      tags: [Événements]
+      summary: Récupérer les statistiques des événements (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Statistiques des événements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      totalEvenements:
+                        type: integer
+                      aVenir:
+                        type: integer
+                      passes:
+                        type: integer
+                      totalParticipants:
+                        type: integer
+                      tauxRemplissageMoyen:
+                        type: number
+        403:
+          description: Accès refusé
+        401:
+          description: Non authentifié
+
+  /api/evenements/{id}/participants:
+    get:
+      tags: [Événements]
+      summary: Récupérer les participants d'un événement (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Liste des participants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Membre"
+        404:
+          description: Événement non trouvé
+        403:
+          description: Accès refusé
+        401:
+          description: Non authentifié
+
+  /api/evenements/{id}/inscription:
+    post:
+      tags: [Événements]
+      summary: S'inscrire à un événement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Inscription réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Inscription impossible (places épuisées ou déjà inscrit)
+        404:
+          description: Événement non trouvé
+        401:
+          description: Non authentifié
+
+    delete:
+      tags: [Événements]
+      summary: Se désinscrire d'un événement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Désinscription réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Non inscrit à cet événement
+        404:
+          description: Événement non trouvé
+        401:
+          description: Non authentifié
