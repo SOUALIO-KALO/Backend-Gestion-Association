@@ -1,0 +1,57 @@
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirmation d'inscription</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding:
+      20px; background-color: #f4f4f4; } .container { background-color: #ffffff;
+      border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px
+      rgba(0,0,0,0.1); } .header { text-align: center; border-bottom: 3px solid
+      #4CAF50; padding-bottom: 20px; margin-bottom: 20px; } .header h1 { color:
+      #4CAF50; margin: 0; font-size: 24px; } .content { padding: 20px 0; }
+      .event-box { background-color: #e8f5e9; border-left: 4px solid #4CAF50;
+      padding: 20px; margin: 20px 0; border-radius: 5px; } .event-box h2 {
+      margin: 0 0 15px 0; color: #2e7d32; } .event-detail { margin: 10px 0; }
+      .footer { text-align: center; padding-top: 20px; border-top: 1px solid
+      #eee; color: #666; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Inscription Confirmee</h1>
+      </div>
+
+      <div class="content">
+        <p>Bonjour <strong>{{prenom}} {{nom}}</strong>,</p>
+
+        <p>Nous vous confirmons votre inscription a l'evenement suivant :</p>
+
+        <div class="event-box">
+          <h2>{{evenement}}</h2>
+          <div class="event-detail">
+            <strong>Date :</strong>
+            {{date}}
+          </div>
+          <div class="event-detail">
+            <strong>Lieu :</strong>
+            {{lieu}}
+          </div>
+        </div>
+
+        <p>Nous avons hate de vous y retrouver !</p>
+
+        <p>Si vous avez des questions ou si vous devez annuler votre
+          inscription, n'hesitez pas a nous contacter.</p>
+      </div>
+
+      <div class="footer">
+        <p>Cet email a ete envoye automatiquement par le systeme de gestion
+          associative.</p>
+        <p>Association - Tous droits reserves</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -7,7 +7,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 
 const routes = require("./routes");
-const errorHandler = require("./middlewares/errorHandler");
+const { errorHandler, notFoundHandler } = require("./middlewares/errorHandler");
 
 const app = express();
 
@@ -89,12 +89,7 @@ app.use("/api", routes);
 // ============================================
 
 // Route 404
-app.use("*", (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} non trouvée`,
-  });
-});
+app.use("*", notFoundHandler);
 
 // Gestionnaire d'erreurs global
 app.use(errorHandler);

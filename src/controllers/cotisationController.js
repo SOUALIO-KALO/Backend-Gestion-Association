@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { addYears, startOfDay, endOfDay, subDays } = require("date-fns");
 const { createError } = require("../utils/helpers");
+const cotisationService = require("../services/cotisationService");
 
 const prisma = new PrismaClient();
 
@@ -70,32 +71,12 @@ exports.getMonStatut = async (req, res, next) => {
  */
 exports.getStatistiques = async (req, res, next) => {
   try {
-    const totalCotisations = await prisma.cotisation.count();
-    const cotisationsAJour = await prisma.cotisation.count({
-      where: { statut: "A_JOUR" },
-    });
-    const cotisationsExpires = await prisma.cotisation.count({
-      where: { statut: "EXPIRE" },
-    });
-
-    const montantTotal = await prisma.cotisation.aggregate({
-      _sum: { montant: true },
-      where: { statut: "A_JOUR" },
-    });
+    const stats = await cotisationService.getStatistiques();
 
     res.status(200).json({
       success: true,
       message: "Statistiques récupérées",
-      data: {
-        totalCotisations,
-        cotisationsAJour,
-        cotisationsExpires,
-        montantTotalMois: montantTotal._sum.montant || 0,
-        repartition: {
-          aJour: cotisationsAJour,
-          expirees: cotisationsExpires,
-        },
-      },
+      data: stats,
     });
   } catch (error) {
     next(error);
@@ -301,18 +282,109 @@ exports.genererRecuPDF = async (req, res, next) => {
       throw createError("Accès refusé", 403);
     }
 
-    // TODO: Générer le PDF avec pdfkit ou similar
-    // Pour l'instant, retourner un PDF simple en base64
-    const pdfContent = Buffer.from(
-      "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 612 792] /Contents 5 0 R >>\nendobj\n4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n5 0 obj\n<< /Length 44 >>\nstream\nBT\n/F1 12 Tf\n100 700 Td\n(Reçu Cotisation) Tj\nET\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n0000000244 00000 n\n0000000333 00000 n\ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n427\n%%EOF"
-    );
+    // Générer le PDF avec PDFKit
+    const PDFDocument = require("pdfkit");
+    const doc = new PDFDocument({ size: "A4", margin: 50 });
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="recu-${cotisation.reference}.pdf"`
+    // Collecter les chunks en buffer
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => {
+      const pdfBuffer = Buffer.concat(chunks);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="recu-${cotisation.reference || id}.pdf"`
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+      res.send(pdfBuffer);
+    });
+
+    // Formatage des dates et montants
+    const formatDate = (date) => {
+      return new Date(date).toLocaleDateString("fr-FR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    };
+
+    const formatMontant = (montant) => {
+      return new Intl.NumberFormat("fr-FR", {
+        style: "currency",
+        currency: "EUR",
+      }).format(montant);
+    };
+
+    const modePaiementLabels = {
+      ESPECES: "Espèces",
+      CHEQUE: "Chèque",
+      VIREMENT: "Virement bancaire",
+      CARTE_BANCAIRE: "Carte bancaire",
+    };
+
+    // En-tête
+    doc.fontSize(24).fillColor("#1e40af").text("REÇU DE COTISATION", { align: "center" });
+    doc.moveDown(0.5);
+    doc.fontSize(12).fillColor("#6b7280").text("Association - Gestion Associative", { align: "center" });
+    doc.moveDown(2);
+
+    // Ligne de séparation
+    doc.strokeColor("#e5e7eb").lineWidth(1).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(1);
+
+    // Référence
+    doc.fontSize(11).fillColor("#374151").text(`Référence: ${cotisation.reference || id}`, { align: "right" });
+    doc.text(`Date d'émission: ${formatDate(new Date())}`, { align: "right" });
+    doc.moveDown(2);
+
+    // Informations membre
+    doc.fontSize(14).fillColor("#1e40af").text("MEMBRE");
+    doc.moveDown(0.5);
+    doc.fontSize(11).fillColor("#374151");
+    doc.text(`Nom: ${cotisation.membre.prenom} ${cotisation.membre.nom}`);
+    doc.text(`Email: ${cotisation.membre.email}`);
+    if (cotisation.membre.telephone) {
+      doc.text(`Téléphone: ${cotisation.membre.telephone}`);
+    }
+    doc.moveDown(1.5);
+
+    // Détails de la cotisation
+    doc.fontSize(14).fillColor("#1e40af").text("DÉTAILS DE LA COTISATION");
+    doc.moveDown(0.5);
+    doc.fontSize(11).fillColor("#374151");
+    doc.text(`Date de paiement: ${formatDate(cotisation.datePaiement)}`);
+    doc.text(`Date d'expiration: ${formatDate(cotisation.dateExpiration)}`);
+    doc.text(`Mode de paiement: ${modePaiementLabels[cotisation.modePaiement] || cotisation.modePaiement}`);
+    doc.moveDown(1.5);
+
+    // Montant (encadré)
+    const montantY = doc.y;
+    doc.rect(50, montantY, 495, 60).fillAndStroke("#f0f9ff", "#3b82f6");
+    doc.fontSize(14).fillColor("#1e40af").text("MONTANT PAYÉ", 70, montantY + 15);
+    doc.fontSize(24).fillColor("#1e40af").text(formatMontant(cotisation.montant), 70, montantY + 32);
+    doc.moveDown(4);
+
+    // Notes
+    if (cotisation.notes) {
+      doc.fontSize(14).fillColor("#1e40af").text("NOTES");
+      doc.moveDown(0.5);
+      doc.fontSize(11).fillColor("#374151").text(cotisation.notes);
+      doc.moveDown(1.5);
+    }
+
+    // Pied de page
+    doc.moveDown(2);
+    doc.strokeColor("#e5e7eb").lineWidth(1).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(1);
+    doc.fontSize(10).fillColor("#9ca3af").text(
+      "Ce reçu atteste du paiement de la cotisation. Conservez-le précieusement.",
+      { align: "center" }
     );
-    res.send(pdfContent);
+    doc.text(`Document généré le ${formatDate(new Date())}`, { align: "center" });
+
+    // Finaliser le PDF
+    doc.end();
   } catch (error) {
     next(error);
   }

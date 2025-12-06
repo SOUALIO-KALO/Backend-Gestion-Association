@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const { createError } = require("../utils/helpers");
+const evenementService = require("../services/evenementService");
 
 const prisma = new PrismaClient();
 
@@ -172,6 +173,112 @@ exports.deleteEvenement = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Événement supprimé",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Récupérer le calendrier des événements
+ * @route   GET /api/evenements/calendrier
+ * @access  Private
+ */
+exports.getCalendrier = async (req, res, next) => {
+  try {
+    const mois = parseInt(req.query.mois) || new Date().getMonth() + 1;
+    const annee = parseInt(req.query.annee) || new Date().getFullYear();
+
+    const evenements = await evenementService.getCalendrier(mois, annee);
+
+    res.status(200).json({
+      success: true,
+      message: "Calendrier récupéré",
+      data: evenements,
+      mois,
+      annee,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Récupérer les statistiques des événements
+ * @route   GET /api/evenements/statistiques
+ * @access  Private (Admin)
+ */
+exports.getStatistiques = async (req, res, next) => {
+  try {
+    const stats = await evenementService.getStatistiques();
+
+    res.status(200).json({
+      success: true,
+      message: "Statistiques récupérées",
+      data: stats,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Récupérer les participants d'un événement
+ * @route   GET /api/evenements/:id/participants
+ * @access  Private (Admin)
+ */
+exports.getParticipants = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await evenementService.getParticipants(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Participants récupérés",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    S'inscrire à un événement
+ * @route   POST /api/evenements/:id/inscription
+ * @access  Private
+ */
+exports.inscrire = async (req, res, next) => {
+  try {
+    const { id: evenementId } = req.params;
+    const { id: membreId } = req.user;
+
+    const inscription = await evenementService.inscrire(evenementId, membreId);
+
+    res.status(201).json({
+      success: true,
+      message: "Inscription confirmée",
+      data: inscription,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Se désinscrire d'un événement
+ * @route   DELETE /api/evenements/:id/inscription
+ * @access  Private
+ */
+exports.desinscrire = async (req, res, next) => {
+  try {
+    const { id: evenementId } = req.params;
+    const { id: membreId } = req.user;
+
+    await evenementService.desinscrire(evenementId, membreId);
+
+    res.status(200).json({
+      success: true,
+      message: "Désinscription effectuée",
     });
   } catch (error) {
     next(error);

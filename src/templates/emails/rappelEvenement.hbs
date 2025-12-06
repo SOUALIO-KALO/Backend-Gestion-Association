@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rappel - Evenement demain</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid #FF9800;
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      color: #FF9800;
+      margin: 0;
+      font-size: 24px;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    .event-box {
+      background-color: #fff3e0;
+      border-left: 4px solid #FF9800;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 5px;
+    }
+    .event-box h2 {
+      margin: 0 0 15px 0;
+      color: #e65100;
+    }
+    .event-detail {
+      margin: 10px 0;
+    }
+    .description {
+      background-color: #fafafa;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 15px 0;
+      font-style: italic;
+    }
+    .footer {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      color: #666;
+      font-size: 14px;
+    }
+    .highlight {
+      background-color: #FF9800;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Rappel - Evenement Demain</h1>
+    </div>
+    
+    <div class="content">
+      <p>Bonjour <strong>{{prenom}} {{nom}}</strong>,</p>
+      
+      <p>Nous vous rappelons que vous etes inscrit(e) a un evenement qui aura lieu <span class="highlight">DEMAIN</span> :</p>
+      
+      <div class="event-box">
+        <h2>{{evenement}}</h2>
+        <div class="event-detail">
+          <strong>Date :</strong> {{date}}
+        </div>
+        <div class="event-detail">
+          <strong>Lieu :</strong> {{lieu}}
+        </div>
+        {{#if description}}
+        <div class="description">
+          {{description}}
+        </div>
+        {{/if}}
+      </div>
+      
+      <p>N'oubliez pas de noter cet evenement dans votre agenda !</p>
+      
+      <p>Si vous ne pouvez plus y participer, merci de vous desinscrire afin de liberer votre place pour d'autres membres.</p>
+    </div>
+    
+    <div class="footer">
+      <p>Cet email a ete envoye automatiquement par le systeme de gestion associative.</p>
+      <p>Association - Tous droits reserves</p>
+    </div>
+  </div>
+</body>
+</html>

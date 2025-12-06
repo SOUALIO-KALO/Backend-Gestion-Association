@@ -1,4 +1,18 @@
 const swaggerJsdoc = require("swagger-jsdoc");
+const fs = require("fs");
+const path = require("path");
+
+// Charger le fichier YAML s'il existe
+let swaggerYamlSpec = null;
+try {
+  const yamlPath = path.join(__dirname, "../../docs/swagger.yaml");
+  if (fs.existsSync(yamlPath)) {
+    const yaml = require("js-yaml");
+    swaggerYamlSpec = yaml.load(fs.readFileSync(yamlPath, "utf8"));
+  }
+} catch (err) {
+  console.warn("⚠️ Fichier swagger.yaml non trouvé ou non parsable");
+}
 
 const options = {
   definition: {
@@ -17,7 +31,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5000",
+        url: "http://localhost:3001",
         description: "Serveur de développement",
       },
       {
@@ -86,4 +100,10 @@ const options = {
   apis: ["./src/routes/*.js", "./src/controllers/*.js"],
 };
 
-module.exports = swaggerJsdoc(options);
+// Si le fichier swagger.yaml existe, l'utiliser directement
+if (swaggerYamlSpec) {
+  module.exports = swaggerYamlSpec;
+} else {
+  // Sinon utiliser la génération JSDoc
+  module.exports = swaggerJsdoc(options);
+}

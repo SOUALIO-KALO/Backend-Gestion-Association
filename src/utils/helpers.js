@@ -1,6 +1,7 @@
 // backend/src/utils/helpers.js
 
 const crypto = require("crypto");
+const AppError = require("./AppError");
 
 /**
  * Génère un token aléatoire sécurisé
@@ -39,12 +40,11 @@ const maskEmail = (email) => {
  * Crée une erreur personnalisée avec code HTTP
  * @param {string} message - Message d'erreur
  * @param {number} statusCode - Code HTTP
- * @returns {Error} Erreur personnalisée
+ * @param {Object} details - Détails supplémentaires (optionnel)
+ * @returns {AppError} Erreur personnalisée
  */
-const createError = (message, statusCode = 500) => {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  return error;
+const createError = (message, statusCode = 500, details = null) => {
+  return new AppError(message, statusCode, details);
 };
 
 /**
@@ -80,4 +80,5 @@ module.exports = {
   createError,
   sanitizeObject,
   calculateExpirationDate,
+  AppError,
 };

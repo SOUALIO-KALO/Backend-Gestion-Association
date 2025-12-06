@@ -40,6 +40,25 @@ router.get(
   evenementController.getAllEvenements
 );
 
+/**
+ * @route   GET /api/evenements/calendrier
+ * @desc    Récupérer les événements pour le calendrier
+ * @access  Private
+ */
+router.get("/calendrier", authMiddleware, evenementController.getCalendrier);
+
+/**
+ * @route   GET /api/evenements/statistiques
+ * @desc    Récupérer les statistiques des événements
+ * @access  Private (Admin)
+ */
+router.get(
+  "/statistiques",
+  authMiddleware,
+  requireRole("ADMIN"),
+  evenementController.getStatistiques
+);
+
 // ============================================
 // ROUTES PARAMÉTRISÉES (/:id et variantes)
 // ============================================
@@ -80,6 +99,43 @@ router.delete(
   requireRole("ADMIN"),
   validateGetEvenementById,
   evenementController.deleteEvenement
+);
+
+/**
+ * @route   GET /api/evenements/:id/participants
+ * @desc    Récupérer les participants d'un événement
+ * @access  Private (Admin)
+ */
+router.get(
+  "/:id/participants",
+  authMiddleware,
+  requireRole("ADMIN"),
+  validateGetEvenementById,
+  evenementController.getParticipants
+);
+
+/**
+ * @route   POST /api/evenements/:id/inscription
+ * @desc    S'inscrire à un événement
+ * @access  Private
+ */
+router.post(
+  "/:id/inscription",
+  authMiddleware,
+  validateGetEvenementById,
+  evenementController.inscrire
+);
+
+/**
+ * @route   DELETE /api/evenements/:id/inscription
+ * @desc    Se désinscrire d'un événement
+ * @access  Private
+ */
+router.delete(
+  "/:id/inscription",
+  authMiddleware,
+  validateGetEvenementById,
+  evenementController.desinscrire
 );
 
 module.exports = router;
