@@ -36,6 +36,8 @@ class AuthController {
       res.status(200).json({
         success: true,
         message: "Connexion réussie",
+        token: result.token,
+        refreshToken: result.refreshToken,
         data: result,
       });
     } catch (error) {
