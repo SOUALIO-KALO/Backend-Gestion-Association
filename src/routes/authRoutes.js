@@ -14,9 +14,143 @@ const {
 } = require("../middlewares/validators/authValidator");
 
 /**
- * @route   POST /api/auth/register
- * @desc    Inscription d'un nouveau membre
- * @access  Public
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Inscription d'un nouveau membre
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [nom, prenom, email, motDePasse]
+ *             properties:
+ *               nom:
+ *                 type: string
+ *                 example: "Dupont"
+ *               prenom:
+ *                 type: string
+ *                 example: "Jean"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "jean@example.com"
+ *               motDePasse:
+ *                 type: string
+ *                 format: password
+ *                 example: "Password123!"
+ *     responses:
+ *       201:
+ *         description: Inscription réussie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Inscription réussie"
+ *                 memberId:
+ *                   type: string
+ *                   example: "123e4567-e89b-12d3-a456-426614174000"
+ *       400:
+ *         description: Erreur de validation
+ *       409:
+ *         description: Email déjà utilisé
+ */
+router.post("/register", registerValidation, authController.register);
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Connexion d'un membre
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, motDePasse]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "jean@example.com"
+ *               motDePasse:
+ *                 type: string
+ *                 format: password
+ *                 example: "Password123!"
+ *     responses:
+ *       200:
+ *         description: Connexion réussie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Connexion réussie"
+ *                 token:
+ *                   type: string
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 refreshToken:
+ *                   type: string
+ *       401:
+ *         description: Identifiants invalides
+ *       400:
+ *         description: Erreur de validation
+ */
+router.post("/login", loginValidation, authController.login);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Déconnexion
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Déconnexion réussie
+ *       401:
+ *         description: Non authentifié
+ */
+router.post("/logout", authMiddleware, authController.logout);
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Demande de réinitialisation du mot de passe
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Email de réinitialisation envoyé
+ *       400:
+ *         description: Email invalide
  */
 router.post("/register", registerValidation, authController.register);
 
