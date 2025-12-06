@@ -6,14 +6,17 @@ const { body, query, validationResult } = require("express-validator");
 exports.validateCreateEvenement = [
   body("titre").isString().trim().notEmpty().withMessage("titre est requis"),
   body("description").optional().isString().trim(),
-  body("dateEvenement")
+  body("dateDebut")
     .isISO8601()
-    .withMessage("dateEvenement doit être une date valide"),
-  body("lieu").optional().isString().trim(),
-  body("capacite")
+    .withMessage("dateDebut doit être une date valide"),
+  body("dateFin")
     .optional()
+    .isISO8601()
+    .withMessage("dateFin doit être une date valide"),
+  body("lieu").isString().trim().notEmpty().withMessage("lieu est requis"),
+  body("placesTotal")
     .isInt({ min: 1 })
-    .withMessage("capacite doit être un nombre positif"),
+    .withMessage("placesTotal doit être un nombre positif"),
 
   // Middleware pour gérer les erreurs de validation
   (req, res, next) => {
@@ -35,15 +38,19 @@ exports.validateCreateEvenement = [
 exports.validateUpdateEvenement = [
   body("titre").optional().isString().trim(),
   body("description").optional().isString().trim(),
-  body("dateEvenement")
+  body("dateDebut")
     .optional()
     .isISO8601()
-    .withMessage("dateEvenement doit être une date valide"),
+    .withMessage("dateDebut doit être une date valide"),
+  body("dateFin")
+    .optional()
+    .isISO8601()
+    .withMessage("dateFin doit être une date valide"),
   body("lieu").optional().isString().trim(),
-  body("capacite")
+  body("placesTotal")
     .optional()
     .isInt({ min: 1 })
-    .withMessage("capacite doit être un nombre positif"),
+    .withMessage("placesTotal doit être un nombre positif"),
 
   // Middleware pour gérer les erreurs de validation
   (req, res, next) => {
@@ -65,10 +72,13 @@ exports.validateUpdateEvenement = [
 exports.validateGetEvenementById = [
   (req, res, next) => {
     const { id } = req.params;
-    if (!Number.isInteger(parseInt(id))) {
+    // UUID format: 8-4-4-4-12 hex digits
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
       return res.status(400).json({
         success: false,
-        message: "ID doit être un entier valide",
+        message: "ID doit être un UUID valide",
       });
     }
     next();

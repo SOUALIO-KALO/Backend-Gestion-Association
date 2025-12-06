@@ -14,7 +14,7 @@ const evenementRoutes = require("./evenementRoutes");
 router.use("/auth", authRoutes);
 router.use("/membres", membreRoutes);
 router.use("/cotisations", cotisationRoutes);
-// router.use("/evenements", evenementRoutes);
+router.use("/evenements", evenementRoutes);
 
 // Route d'information API
 router.get("/", (req, res) => {

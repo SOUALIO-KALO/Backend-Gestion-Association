@@ -4,24 +4,16 @@ const router = express.Router();
 const evenementController = require("../controllers/evenementController");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 const { requireRole } = require("../middlewares/roleMiddleware");
+const {
+  validateCreateEvenement,
+  validateUpdateEvenement,
+  validateGetEvenementById,
+  validateSearchParams,
+} = require("../middlewares/validators/evenementValidator");
 
 // ============================================
-// ROUTES ÉVÉNEMENTS
+// ROUTES STATIQUES (doivent venir en premier)
 // ============================================
-
-/**
- * @route   GET /api/evenements
- * @desc    Récupérer tous les événements
- * @access  Private
- */
-router.get("/", authMiddleware, evenementController.getAllEvenements);
-
-/**
- * @route   GET /api/evenements/:id
- * @desc    Récupérer un événement par ID
- * @access  Private
- */
-router.get("/:id", authMiddleware, evenementController.getEvenementById);
 
 /**
  * @route   POST /api/evenements
@@ -32,7 +24,36 @@ router.post(
   "/",
   authMiddleware,
   requireRole("ADMIN"),
+  validateCreateEvenement,
   evenementController.createEvenement
+);
+
+/**
+ * @route   GET /api/evenements
+ * @desc    Récupérer tous les événements
+ * @access  Private
+ */
+router.get(
+  "/",
+  authMiddleware,
+  validateSearchParams,
+  evenementController.getAllEvenements
+);
+
+// ============================================
+// ROUTES PARAMÉTRISÉES (/:id et variantes)
+// ============================================
+
+/**
+ * @route   GET /api/evenements/:id
+ * @desc    Récupérer un événement par ID
+ * @access  Private
+ */
+router.get(
+  "/:id",
+  authMiddleware,
+  validateGetEvenementById,
+  evenementController.getEvenementById
 );
 
 /**
@@ -44,6 +65,7 @@ router.put(
   "/:id",
   authMiddleware,
   requireRole("ADMIN"),
+  validateUpdateEvenement,
   evenementController.updateEvenement
 );
 
@@ -56,6 +78,7 @@ router.delete(
   "/:id",
   authMiddleware,
   requireRole("ADMIN"),
+  validateGetEvenementById,
   evenementController.deleteEvenement
 );
 

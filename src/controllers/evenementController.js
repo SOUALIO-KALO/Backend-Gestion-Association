@@ -17,7 +17,7 @@ exports.getAllEvenements = async (req, res, next) => {
     const evenements = await prisma.evenement.findMany({
       skip,
       take: limit,
-      orderBy: { dateEvenement: "desc" },
+      orderBy: { dateDebut: "desc" },
     });
 
     const total = await prisma.evenement.count();
@@ -48,7 +48,7 @@ exports.getEvenementById = async (req, res, next) => {
     const { id } = req.params;
 
     const evenement = await prisma.evenement.findUnique({
-      where: { id: parseInt(id) },
+      where: { id },
     });
 
     if (!evenement) {
@@ -72,15 +72,21 @@ exports.getEvenementById = async (req, res, next) => {
  */
 exports.createEvenement = async (req, res, next) => {
   try {
-    const { titre, description, dateEvenement, lieu, capacite } = req.body;
+    const { titre, description, dateDebut, dateFin, lieu, placesTotal } =
+      req.body;
+    const { id: createurId } = req.user; // L'utilisateur connecté est le créateur
 
     const evenement = await prisma.evenement.create({
       data: {
         titre,
         description: description || null,
-        dateEvenement: new Date(dateEvenement),
-        lieu: lieu || null,
-        capacite: capacite ? parseInt(capacite) : null,
+        dateDebut: new Date(dateDebut),
+        dateFin: dateFin ? new Date(dateFin) : null,
+        lieu,
+        placesTotal: parseInt(placesTotal),
+        placesRestantes: parseInt(placesTotal),
+        createurId,
+        estPublie: true,
       },
     });
 
@@ -102,10 +108,11 @@ exports.createEvenement = async (req, res, next) => {
 exports.updateEvenement = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { titre, description, dateEvenement, lieu, capacite } = req.body;
+    const { titre, description, dateDebut, dateFin, lieu, placesTotal } =
+      req.body;
 
     const evenement = await prisma.evenement.findUnique({
-      where: { id: parseInt(id) },
+      where: { id },
     });
 
     if (!evenement) {
@@ -115,13 +122,19 @@ exports.updateEvenement = async (req, res, next) => {
     const updateData = {};
     if (titre) updateData.titre = titre;
     if (description !== undefined) updateData.description = description;
-    if (dateEvenement) updateData.dateEvenement = new Date(dateEvenement);
-    if (lieu !== undefined) updateData.lieu = lieu;
-    if (capacite !== undefined)
-      updateData.capacite = capacite ? parseInt(capacite) : null;
+    if (dateDebut) updateData.dateDebut = new Date(dateDebut);
+    if (dateFin !== undefined)
+      updateData.dateFin = dateFin ? new Date(dateFin) : null;
+    if (lieu) updateData.lieu = lieu;
+    if (placesTotal !== undefined) {
+      const newPlacesTotal = parseInt(placesTotal);
+      const oldPlacesUsed = evenement.placesTotal - evenement.placesRestantes;
+      updateData.placesTotal = newPlacesTotal;
+      updateData.placesRestantes = Math.max(0, newPlacesTotal - oldPlacesUsed);
+    }
 
     const updated = await prisma.evenement.update({
-      where: { id: parseInt(id) },
+      where: { id },
       data: updateData,
     });
 
@@ -145,7 +158,7 @@ exports.deleteEvenement = async (req, res, next) => {
     const { id } = req.params;
 
     const evenement = await prisma.evenement.findUnique({
-      where: { id: parseInt(id) },
+      where: { id },
     });
 
     if (!evenement) {
@@ -153,7 +166,7 @@ exports.deleteEvenement = async (req, res, next) => {
     }
 
     await prisma.evenement.delete({
-      where: { id: parseInt(id) },
+      where: { id },
     });
 
     res.status(200).json({
