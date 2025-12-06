@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ÉNUMÉRATIONS
+// ============================================
+
+enum Role {
+  ADMIN
+  MEMBRE
+}
+
+enum StatutMembre {
+  ACTIF
+  INACTIF
+  BUREAU
+}
+
+enum StatutCotisation {
+  A_JOUR
+  EXPIRE
+  EN_ATTENTE
+}
+
+enum ModePaiement {
+  ESPECES
+  CHEQUE
+  VIREMENT
+  CARTE_BANCAIRE
+}
+
+enum StatutInscription {
+  CONFIRMEE
+  ANNULEE
+  EN_ATTENTE
+}
+
+// ============================================
+// MODÈLES
+// ============================================
+
+/// Table des membres de l'association
+model Membre {
+  id            String         @id @default(uuid())
+  nom           String         @db.VarChar(100)
+  prenom        String         @db.VarChar(100)
+  email         String         @unique @db.VarChar(255)
+  telephone     String?        @db.VarChar(20)
+  motDePasse    String         @map("mot_de_passe")
+  role          Role           @default(MEMBRE)
+  statut        StatutMembre   @default(ACTIF)
+  dateCreation  DateTime       @default(now()) @map("date_creation")
+  dateModification DateTime    @updatedAt @map("date_modification")
+  
+  // Token pour réinitialisation mot de passe
+  resetToken          String?   @map("reset_token")
+  resetTokenExpiration DateTime? @map("reset_token_expiration")
+  
+  // Relations
+  cotisations   Cotisation[]
+  inscriptions  Inscription[]
+  evenementsCrees Evenement[] @relation("CreateurEvenement")
+
+  @@index([email])
+  @@index([statut])
+  @@index([dateCreation])
+  @@map("membres")
+}
+
+/// Table des cotisations
+model Cotisation {
+  id              String           @id @default(uuid())
+  membreId        String           @map("membre_id")
+  datePaiement    DateTime         @map("date_paiement")
+  montant         Decimal          @db.Decimal(10, 2)
+  modePaiement    ModePaiement     @map("mode_paiement")
+  dateExpiration  DateTime         @map("date_expiration")
+  statut          StatutCotisation @default(EN_ATTENTE)
+  reference       String           @unique @default(uuid()) // Référence pour le reçu
+  notes           String?          @db.Text
+  dateCreation    DateTime         @default(now()) @map("date_creation")
+  dateModification DateTime        @updatedAt @map("date_modification")
+
+  // Relations
+  membre Membre @relation(fields: [membreId], references: [id], onDelete: Cascade)
+
+  @@index([membreId])
+  @@index([dateExpiration])
+  @@index([statut])
+  @@index([datePaiement])
+  @@map("cotisations")
+}
+
+/// Table des événements
+model Evenement {
+  id              String    @id @default(uuid())
+  titre           String    @db.VarChar(200)
+  description     String?   @db.Text
+  dateDebut       DateTime  @map("date_debut")
+  dateFin         DateTime? @map("date_fin")
+  lieu            String    @db.VarChar(255)
+  placesTotal     Int       @map("places_total")
+  placesRestantes Int       @map("places_restantes")
+  createurId      String    @map("createur_id")
+  estPublie       Boolean   @default(true) @map("est_publie")
+  dateCreation    DateTime  @default(now()) @map("date_creation")
+  dateModification DateTime @updatedAt @map("date_modification")
+
+  // Relations
+  createur     Membre        @relation("CreateurEvenement", fields: [createurId], references: [id])
+  inscriptions Inscription[]
+
+  @@index([dateDebut])
+  @@index([createurId])
+  @@index([estPublie])
+  @@map("evenements")
+}
+
+/// Table des inscriptions aux événements
+model Inscription {
+  id               String            @id @default(uuid())
+  membreId         String            @map("membre_id")
+  evenementId      String            @map("evenement_id")
+  dateInscription  DateTime          @default(now()) @map("date_inscription")
+  statut           StatutInscription @default(EN_ATTENTE)
+  notes            String?           @db.Text
+  dateModification DateTime          @updatedAt @map("date_modification")
+
+  // Relations
+  membre    Membre    @relation(fields: [membreId], references: [id], onDelete: Cascade)
+  evenement Evenement @relation(fields: [evenementId], references: [id], onDelete: Cascade)
+
+  // Contrainte unique : un membre ne peut s'inscrire qu'une fois à un événement
+  @@unique([membreId, evenementId])
+  @@index([membreId])
+  @@index([evenementId])
+  @@index([statut])
+  @@map("inscriptions")
+}
