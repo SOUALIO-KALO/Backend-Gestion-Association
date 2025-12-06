@@ -1,0 +1,113 @@
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rappel de cotisation</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding:
+      20px; background-color: #f5f5f5; } .container { background-color: #ffffff;
+      border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      } .header { text-align: center; padding-bottom: 20px; border-bottom: 3px
+      solid #f59e0b; } .logo { font-size: 32px; font-weight: bold; color:
+      #2563eb; margin-bottom: 10px; } .content { padding: 20px 0; } .alert-box {
+      background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px;
+      margin: 20px 0; border-radius: 4px; } .alert-title { font-weight: bold;
+      color: #92400e; margin-bottom: 8px; font-size: 16px; } .alert-text {
+      color: #78350f; margin: 0; } .info-box { background-color: #f3f4f6;
+      padding: 15px; border-radius: 6px; margin: 20px 0; } .info-row { display:
+      flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px
+      solid #e5e7eb; } .info-row:last-child { border-bottom: none; } .info-label
+      { font-weight: 600; color: #4b5563; } .info-value { color: #1f2937; }
+      .button { display: inline-block; padding: 12px 24px; background-color:
+      #2563eb; color: #ffffff !important; text-decoration: none; border-radius:
+      6px; font-weight: bold; text-align: center; margin: 20px 0; }
+      .button:hover { background-color: #1d4ed8; } .footer { text-align: center;
+      padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280;
+      font-size: 14px; margin-top: 30px; } .urgent { color: #dc2626;
+      font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- En-tête -->
+      <div class="header">
+        <div class="logo">GA</div>
+        <h2 style="margin: 0; color: #1f2937;">Gestion Associative</h2>
+      </div>
+
+      <!-- Contenu -->
+      <div class="content">
+        <p>Bonjour <strong>{{prenom}} {{nom}}</strong>,</p>
+
+        <p>Nous vous informons que votre cotisation arrive à expiration.</p>
+
+        <!-- Alerte -->
+        <div class="alert-box">
+          <div class="alert-title">⚠️ Attention - Expiration prochaine</div>
+          <p class="alert-text">
+            Votre cotisation expire dans
+            {{#if (eq joursRestants 0)}}
+              <span class="urgent">moins de 24 heures</span>
+            {{else if (lt joursRestants 7)}}
+              <span class="urgent">{{joursRestants}} jour(s)</span>
+            {{else}}
+              <strong>{{joursRestants}} jour(s)</strong>
+            {{/if}}
+          </p>
+        </div>
+
+        <!-- Informations de la cotisation -->
+        <div class="info-box">
+          <div class="info-row">
+            <span class="info-label">Date d'expiration :</span>
+            <span class="info-value"><strong>{{dateExpiration}}</strong></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Montant de la cotisation :</span>
+            <span class="info-value"><strong>{{montant}} FCFA</strong></span>
+          </div>
+        </div>
+
+        <p>
+          Pour renouveler votre cotisation et continuer à bénéficier de tous les
+          avantages de notre association, nous vous invitons à effectuer votre
+          paiement dans les meilleurs délais.
+        </p>
+
+        <h3 style="color: #1f2937; margin-top: 25px;">Modes de paiement acceptés
+          :</h3>
+        <ul style="color: #4b5563;">
+          <li>💵 Espèces (directement au bureau)</li>
+          <li>📝 Chèque (à l'ordre de l'association)</li>
+          <li>🏦 Virement bancaire</li>
+          <li>💳 Carte bancaire</li>
+        </ul>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="#" class="button">Renouveler ma cotisation</a>
+        </div>
+
+        <p style="color: #6b7280; font-size: 14px; font-style: italic;">
+          💡 Astuce : Un reçu vous sera automatiquement délivré après le
+          paiement de votre cotisation.
+        </p>
+      </div>
+
+      <!-- Pied de page -->
+      <div class="footer">
+        <p style="margin: 5px 0;">
+          <strong>Besoin d'aide ?</strong><br />
+          Contactez-nous : contact@association.org | +225 01 02 03 04 05
+        </p>
+        <p style="margin: 15px 0 5px; font-size: 12px;">
+          Vous recevez cet email car votre cotisation arrive à expiration.<br />
+          Ceci est un message automatique, merci de ne pas y répondre.
+        </p>
+        <p style="margin: 5px 0; font-size: 12px; color: #9ca3af;">
+          © 2024 Gestion Associative - Tous droits réservés
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
