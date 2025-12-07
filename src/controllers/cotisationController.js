@@ -310,10 +310,11 @@ exports.genererRecuPDF = async (req, res, next) => {
     };
 
     const formatMontant = (montant) => {
-      return new Intl.NumberFormat("fr-FR", {
-        style: "currency",
-        currency: "FCFA",
+      const formatted = new Intl.NumberFormat("fr-FR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       }).format(montant);
+      return `${formatted} FCFA`;
     };
 
     const modePaiementLabels = {
