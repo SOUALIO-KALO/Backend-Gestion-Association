@@ -312,7 +312,7 @@ exports.genererRecuPDF = async (req, res, next) => {
     const formatMontant = (montant) => {
       return new Intl.NumberFormat("fr-FR", {
         style: "currency",
-        currency: "EUR",
+        currency: "FCFA",
       }).format(montant);
     };
 
@@ -324,17 +324,31 @@ exports.genererRecuPDF = async (req, res, next) => {
     };
 
     // En-tête
-    doc.fontSize(24).fillColor("#1e40af").text("REÇU DE COTISATION", { align: "center" });
+    doc
+      .fontSize(24)
+      .fillColor("#1e40af")
+      .text("REÇU DE COTISATION", { align: "center" });
     doc.moveDown(0.5);
-    doc.fontSize(12).fillColor("#6b7280").text("Association - Gestion Associative", { align: "center" });
+    doc
+      .fontSize(12)
+      .fillColor("#6b7280")
+      .text("Association - Gestion Associative", { align: "center" });
     doc.moveDown(2);
 
     // Ligne de séparation
-    doc.strokeColor("#e5e7eb").lineWidth(1).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc
+      .strokeColor("#e5e7eb")
+      .lineWidth(1)
+      .moveTo(50, doc.y)
+      .lineTo(545, doc.y)
+      .stroke();
     doc.moveDown(1);
 
     // Référence
-    doc.fontSize(11).fillColor("#374151").text(`Référence: ${cotisation.reference || id}`, { align: "right" });
+    doc
+      .fontSize(11)
+      .fillColor("#374151")
+      .text(`Référence: ${cotisation.reference || id}`, { align: "right" });
     doc.text(`Date d'émission: ${formatDate(new Date())}`, { align: "right" });
     doc.moveDown(2);
 
@@ -355,14 +369,24 @@ exports.genererRecuPDF = async (req, res, next) => {
     doc.fontSize(11).fillColor("#374151");
     doc.text(`Date de paiement: ${formatDate(cotisation.datePaiement)}`);
     doc.text(`Date d'expiration: ${formatDate(cotisation.dateExpiration)}`);
-    doc.text(`Mode de paiement: ${modePaiementLabels[cotisation.modePaiement] || cotisation.modePaiement}`);
+    doc.text(
+      `Mode de paiement: ${
+        modePaiementLabels[cotisation.modePaiement] || cotisation.modePaiement
+      }`
+    );
     doc.moveDown(1.5);
 
     // Montant (encadré)
     const montantY = doc.y;
     doc.rect(50, montantY, 495, 60).fillAndStroke("#f0f9ff", "#3b82f6");
-    doc.fontSize(14).fillColor("#1e40af").text("MONTANT PAYÉ", 70, montantY + 15);
-    doc.fontSize(24).fillColor("#1e40af").text(formatMontant(cotisation.montant), 70, montantY + 32);
+    doc
+      .fontSize(14)
+      .fillColor("#1e40af")
+      .text("MONTANT PAYÉ", 70, montantY + 15);
+    doc
+      .fontSize(24)
+      .fillColor("#1e40af")
+      .text(formatMontant(cotisation.montant), 70, montantY + 32);
     doc.moveDown(4);
 
     // Notes
@@ -375,13 +399,23 @@ exports.genererRecuPDF = async (req, res, next) => {
 
     // Pied de page
     doc.moveDown(2);
-    doc.strokeColor("#e5e7eb").lineWidth(1).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc
+      .strokeColor("#e5e7eb")
+      .lineWidth(1)
+      .moveTo(50, doc.y)
+      .lineTo(545, doc.y)
+      .stroke();
     doc.moveDown(1);
-    doc.fontSize(10).fillColor("#9ca3af").text(
-      "Ce reçu atteste du paiement de la cotisation. Conservez-le précieusement.",
-      { align: "center" }
-    );
-    doc.text(`Document généré le ${formatDate(new Date())}`, { align: "center" });
+    doc
+      .fontSize(10)
+      .fillColor("#9ca3af")
+      .text(
+        "Ce reçu atteste du paiement de la cotisation. Conservez-le précieusement.",
+        { align: "center" }
+      );
+    doc.text(`Document généré le ${formatDate(new Date())}`, {
+      align: "center",
+    });
 
     // Finaliser le PDF
     doc.end();
