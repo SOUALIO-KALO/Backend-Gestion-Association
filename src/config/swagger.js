@@ -14,6 +14,16 @@ try {
   console.warn("⚠️ Fichier swagger.yaml non trouvé ou non parsable");
 }
 
+// URL de base dynamique selon l'environnement
+const getBaseUrl = () => {
+  if (process.env.NODE_ENV === "production") {
+    return process.env.BACKEND_URL || "https://gestion-asso-api.onrender.com";
+  }
+  return "http://localhost:3001";
+};
+
+const baseUrl = getBaseUrl();
+
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -31,12 +41,12 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3001",
-        description: "Serveur de développement",
+        url: `${baseUrl}/api`,
+        description: "Serveur actuel (production ou dev)",
       },
       {
-        url: "https://api.gestion-associative.com",
-        description: "Serveur de production",
+        url: "http://localhost:3001/api",
+        description: "Serveur de développement local",
       },
     ],
     components: {
@@ -45,65 +55,41 @@ const options = {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
-          description: "Entrez le token JWT",
+          description: "Entrez votre token JWT (Bearer)",
         },
       },
       schemas: {
         Error: {
           type: "object",
           properties: {
-            success: {
-              type: "boolean",
-              example: false,
-            },
-            message: {
-              type: "string",
-              example: "Erreur lors du traitement",
-            },
-            errors: {
-              type: "array",
-              items: {
-                type: "object",
-              },
-            },
+            success: { type: "boolean", example: false },
+            message: { type: "string", example: "Erreur lors du traitement" },
+            errors: { type: "array", items: { type: "object" } },
           },
         },
         Pagination: {
           type: "object",
           properties: {
-            page: {
-              type: "integer",
-              example: 1,
-            },
-            limit: {
-              type: "integer",
-              example: 10,
-            },
-            total: {
-              type: "integer",
-              example: 100,
-            },
-            pages: {
-              type: "integer",
-              example: 10,
-            },
+            page: { type: "integer", example: 1 },
+            limit: { type: "integer", example: 10 },
+            total: { type: "integer", example: 100 },
+            pages: { type: "integer", example: 10 },
           },
         },
       },
     },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
+    security: [{ bearerAuth: [] }],
   },
   apis: ["./src/routes/*.js", "./src/controllers/*.js"],
 };
 
-// Si le fichier swagger.yaml existe, l'utiliser directement
+// Si le fichier swagger.yaml existe, on le garde en priorité
 if (swaggerYamlSpec) {
+  // Optionnel : tu peux aussi injecter dynamiquement les servers dans le YAML
+  if (!swaggerYamlSpec.servers || swaggerYamlSpec.servers.length === 0) {
+    swaggerYamlSpec.servers = [{ url: `${baseUrl}/api` }];
+  }
   module.exports = swaggerYamlSpec;
 } else {
-  // Sinon utiliser la génération JSDoc
   module.exports = swaggerJsdoc(options);
 }
