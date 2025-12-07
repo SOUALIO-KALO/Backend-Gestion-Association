@@ -13,10 +13,8 @@ info:
     name: MIT
 
 servers:
-  - url: http://localhost:3001
-    description: Serveur de développement
-  - url: https://api.gestion-associative.com
-    description: Serveur de production
+  - url: "{BASE_URL_AUTO}"
+    description: Serveur actuel (automatique)
 
 tags:
   - name: Auth
