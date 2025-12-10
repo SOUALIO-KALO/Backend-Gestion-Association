@@ -160,8 +160,8 @@ exports.validateSearchParams = [
     .withMessage("statut doit être A_JOUR, EXPIRE ou EN_ATTENTE"),
   query("membreId")
     .optional()
-    .isInt()
-    .withMessage("membreId doit être un entier"),
+    .isUUID()
+    .withMessage("membreId doit être un UUID valide"),
 
   // Middleware pour gérer les erreurs de validation
   (req, res, next) => {
