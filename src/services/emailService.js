@@ -3,8 +3,12 @@
 const fs = require("fs");
 const path = require("path");
 const handlebars = require("handlebars");
+const { Resend } = require("resend");
 const { transporter, emailFrom } = require("../config/email");
 const { formatDateFR } = require("../utils/helpers");
+
+// Initialiser Resend si la clé API est disponible
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 /**
  * Service d'envoi d'emails
@@ -36,32 +40,48 @@ class EmailService {
   }
 
   /**
-   * Envoie un email
+   * Envoie un email via Resend (prioritaire) ou SMTP (fallback)
    * @param {Object} options - Options de l'email
    */
   async sendEmail({ to, subject, template, data }) {
-    try {
-      // Compiler le template
-      let html;
-      if (this.templates[template]) {
-        html = this.templates[template](data);
-      } else {
-        // Fallback si le template n'existe pas
-        html = `<p>${data.message || "Message de l'association"}</p>`;
-      }
+    // Compiler le template
+    let html;
+    if (this.templates[template]) {
+      html = this.templates[template](data);
+    } else {
+      html = `<p>${data.message || "Message de l'association"}</p>`;
+    }
 
+    // Utiliser Resend si disponible
+    if (resend) {
+      try {
+        const result = await resend.emails.send({
+          from: process.env.RESEND_FROM || "Association <onboarding@resend.dev>",
+          to: [to],
+          subject,
+          html,
+        });
+        console.log(`📧 [Resend] Email envoyé à ${to}: ${result.data?.id}`);
+        return result;
+      } catch (error) {
+        console.error("❌ [Resend] Erreur:", error.message);
+        throw error;
+      }
+    }
+
+    // Fallback SMTP
+    try {
       const mailOptions = {
         from: emailFrom,
         to,
         subject,
         html,
       };
-
       const info = await transporter.sendMail(mailOptions);
-      console.log(`📧 Email envoyé à ${to}: ${info.messageId}`);
+      console.log(`📧 [SMTP] Email envoyé à ${to}: ${info.messageId}`);
       return info;
     } catch (error) {
-      console.error("❌ Erreur envoi email:", error);
+      console.error("❌ [SMTP] Erreur:", error.message);
       throw error;
     }
   }
