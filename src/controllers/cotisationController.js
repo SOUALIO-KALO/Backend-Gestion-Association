@@ -703,47 +703,45 @@ exports.envoyerRappel = async (req, res, next) => {
       throw createError("Le membre n'a pas d'adresse email", 400);
     }
 
-    // Vérifier si le service email est configuré
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-      // En mode dev ou sans config email, simuler l'envoi
-      console.log(`📧 [SIMULATION] Rappel envoyé à ${cotisation.membre.email}`);
-      return res.status(200).json({
-        success: true,
-        message: `Rappel simulé pour ${cotisation.membre.email} (email non configuré)`,
-        data: {
-          email: cotisation.membre.email,
-          membre: `${cotisation.membre.prenom} ${cotisation.membre.nom}`,
-          simulated: true,
-        },
-      });
+    // Tenter d'envoyer l'email si SMTP configuré
+    let emailSent = false;
+    let simulated = true;
+
+    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+      try {
+        // Timeout de 5 secondes
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout")), 5000)
+        );
+
+        await Promise.race([
+          emailService.sendCotisationRappelEmail(cotisation.membre, cotisation),
+          timeoutPromise
+        ]);
+        emailSent = true;
+        simulated = false;
+      } catch (emailError) {
+        console.log(`⚠️ Email non envoyé (${emailError.message}), mode simulation activé`);
+      }
     }
 
-    // Envoyer l'email de rappel avec timeout
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("Timeout envoi email")), 10000)
-    );
-
-    await Promise.race([
-      emailService.sendCotisationRappelEmail(cotisation.membre, cotisation),
-      timeoutPromise
-    ]);
+    // Log de simulation si email non envoyé
+    if (!emailSent) {
+      console.log(`📧 [SIMULATION] Rappel pour ${cotisation.membre.email}`);
+    }
 
     res.status(200).json({
       success: true,
-      message: `Rappel envoyé à ${cotisation.membre.email}`,
+      message: simulated 
+        ? `Rappel enregistré pour ${cotisation.membre.email}` 
+        : `Rappel envoyé à ${cotisation.membre.email}`,
       data: {
         email: cotisation.membre.email,
         membre: `${cotisation.membre.prenom} ${cotisation.membre.nom}`,
+        simulated,
       },
     });
   } catch (error) {
-    // Gérer le timeout spécifiquement
-    if (error.message === "Timeout envoi email") {
-      return res.status(503).json({
-        success: false,
-        message: "Le serveur email ne répond pas. Veuillez réessayer plus tard.",
-      });
-    }
     next(error);
   }
 };
