@@ -47,13 +47,7 @@
           <div class="alert-title">⚠️ Attention - Expiration prochaine</div>
           <p class="alert-text">
             Votre cotisation expire dans
-            {{#if (eq joursRestants 0)}}
-              <span class="urgent">moins de 24 heures</span>
-            {{else if (lt joursRestants 7)}}
-              <span class="urgent">{{joursRestants}} jour(s)</span>
-            {{else}}
-              <strong>{{joursRestants}} jour(s)</strong>
-            {{/if}}
+            <strong>{{joursRestants}} jour(s)</strong>
           </p>
         </div>
 
