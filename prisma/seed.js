@@ -20,6 +20,14 @@ async function main() {
   // CRÉATION DES MEMBRES
   // ============================================
   const motDePasseHash = await bcrypt.hash("Password123!", 12);
+  
+  // Helper pour créer des dates dans le passé (mois précédents)
+  const getDateMonthsAgo = (monthsAgo) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - monthsAgo);
+    date.setDate(Math.floor(Math.random() * 28) + 1);
+    return date;
+  };
 
   const admin = await prisma.membre.create({
     data: {
@@ -30,68 +38,54 @@ async function main() {
       motDePasse: motDePasseHash,
       role: "ADMIN",
       statut: "BUREAU",
+      dateCreation: getDateMonthsAgo(5), // Il y a 5 mois
     },
   });
   console.log("✓ Admin créé:", admin.email);
 
-  const membres = await Promise.all([
-    prisma.membre.create({
-      data: {
-        nom: "Dupont",
-        prenom: "Marie",
-        email: "marie.dupont@email.fr",
-        telephone: "0611223344",
-        motDePasse: motDePasseHash,
-        role: "MEMBRE",
-        statut: "ACTIF",
-      },
-    }),
-    prisma.membre.create({
-      data: {
-        nom: "Bernard",
-        prenom: "Pierre",
-        email: "pierre.bernard@email.fr",
-        telephone: "0622334455",
-        motDePasse: motDePasseHash,
-        role: "MEMBRE",
-        statut: "ACTIF",
-      },
-    }),
-    prisma.membre.create({
-      data: {
-        nom: "Petit",
-        prenom: "Sophie",
-        email: "sophie.petit@email.fr",
-        telephone: "0633445566",
-        motDePasse: motDePasseHash,
-        role: "MEMBRE",
-        statut: "INACTIF",
-      },
-    }),
-    prisma.membre.create({
-      data: {
-        nom: "Leroy",
-        prenom: "François",
-        email: "francois.leroy@email.fr",
-        telephone: "0644556677",
-        motDePasse: motDePasseHash,
-        role: "ADMIN",
-        statut: "BUREAU",
-      },
-    }),
-    prisma.membre.create({
-      data: {
-        nom: "Moreau",
-        prenom: "Isabelle",
-        email: "isabelle.moreau@email.fr",
-        telephone: "0655667788",
-        motDePasse: motDePasseHash,
-        role: "MEMBRE",
-        statut: "ACTIF",
-      },
-    }),
-  ]);
-  console.log(`✓ ${membres.length} membres créés`);
+  // Créer des membres avec des dates de création variées pour le graphique d'évolution
+  const membresData = [
+    // Mois actuel (0 mois)
+    { nom: "Dupont", prenom: "Marie", email: "marie.dupont@email.fr", telephone: "0611223344", statut: "ACTIF", moisAgo: 0 },
+    { nom: "Bernard", prenom: "Pierre", email: "pierre.bernard@email.fr", telephone: "0622334455", statut: "ACTIF", moisAgo: 0 },
+    // Il y a 1 mois
+    { nom: "Petit", prenom: "Sophie", email: "sophie.petit@email.fr", telephone: "0633445566", statut: "INACTIF", moisAgo: 1 },
+    { nom: "Leroy", prenom: "François", email: "francois.leroy@email.fr", telephone: "0644556677", statut: "ACTIF", moisAgo: 1, role: "ADMIN" },
+    { nom: "Moreau", prenom: "Isabelle", email: "isabelle.moreau@email.fr", telephone: "0655667788", statut: "ACTIF", moisAgo: 1 },
+    // Il y a 2 mois
+    { nom: "Garcia", prenom: "Lucas", email: "lucas.garcia@email.fr", telephone: "0666778899", statut: "ACTIF", moisAgo: 2 },
+    { nom: "Roux", prenom: "Emma", email: "emma.roux@email.fr", telephone: "0677889900", statut: "ACTIF", moisAgo: 2 },
+    { nom: "David", prenom: "Thomas", email: "thomas.david@email.fr", telephone: "0688990011", statut: "BUREAU", moisAgo: 2 },
+    // Il y a 3 mois
+    { nom: "Bertrand", prenom: "Julie", email: "julie.bertrand@email.fr", telephone: "0699001122", statut: "ACTIF", moisAgo: 3 },
+    { nom: "Morel", prenom: "Antoine", email: "antoine.morel@email.fr", telephone: "0610112233", statut: "ACTIF", moisAgo: 3 },
+    // Il y a 4 mois
+    { nom: "Simon", prenom: "Clara", email: "clara.simon@email.fr", telephone: "0621223344", statut: "ACTIF", moisAgo: 4 },
+    { nom: "Laurent", prenom: "Hugo", email: "hugo.laurent@email.fr", telephone: "0632334455", statut: "INACTIF", moisAgo: 4 },
+    { nom: "Michel", prenom: "Léa", email: "lea.michel@email.fr", telephone: "0643445566", statut: "ACTIF", moisAgo: 4 },
+    { nom: "Faure", prenom: "Nathan", email: "nathan.faure@email.fr", telephone: "0654556677", statut: "ACTIF", moisAgo: 4 },
+    // Il y a 5 mois
+    { nom: "Girard", prenom: "Camille", email: "camille.girard@email.fr", telephone: "0665667788", statut: "ACTIF", moisAgo: 5 },
+    { nom: "Andre", prenom: "Louis", email: "louis.andre@email.fr", telephone: "0676778899", statut: "BUREAU", moisAgo: 5 },
+  ];
+
+  const membres = await Promise.all(
+    membresData.map(m => 
+      prisma.membre.create({
+        data: {
+          nom: m.nom,
+          prenom: m.prenom,
+          email: m.email,
+          telephone: m.telephone,
+          motDePasse: motDePasseHash,
+          role: m.role || "MEMBRE",
+          statut: m.statut,
+          dateCreation: getDateMonthsAgo(m.moisAgo),
+        },
+      })
+    )
+  );
+  console.log(`✓ ${membres.length} membres créés avec dates variées pour le graphique`);
 
   // ============================================
   // CRÉATION DES COTISATIONS
@@ -118,18 +112,36 @@ async function main() {
         statut: "A_JOUR",
       },
     }),
-    // Cotisation expirant bientôt (dans 25 jours)
+    // Cotisation expirant dans 5 jours (alerte urgente)
     prisma.cotisation.create({
       data: {
         membreId: membres[1].id,
-        datePaiement: new Date(
-          now.getFullYear() - 1,
-          now.getMonth(),
-          now.getDate()
-        ),
+        datePaiement: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
         montant: 50.0,
         modePaiement: "CHEQUE",
-        dateExpiration: new Date(now.getTime() + 25 * 24 * 60 * 60 * 1000),
+        dateExpiration: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
+        statut: "A_JOUR",
+      },
+    }),
+    // Cotisation expirant dans 8 jours (alerte)
+    prisma.cotisation.create({
+      data: {
+        membreId: membres[5].id,
+        datePaiement: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+        montant: 50.0,
+        modePaiement: "VIREMENT",
+        dateExpiration: new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000),
+        statut: "A_JOUR",
+      },
+    }),
+    // Cotisation expirant dans 3 jours (très urgent)
+    prisma.cotisation.create({
+      data: {
+        membreId: membres[6].id,
+        datePaiement: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+        montant: 50.0,
+        modePaiement: "CARTE_BANCAIRE",
+        dateExpiration: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
         statut: "A_JOUR",
       },
     }),
@@ -166,8 +178,29 @@ async function main() {
         statut: "A_JOUR",
       },
     }),
+    // Plus de cotisations pour les autres membres
+    prisma.cotisation.create({
+      data: {
+        membreId: membres[7].id,
+        datePaiement: new Date(now.getFullYear(), now.getMonth() - 2, 15),
+        montant: 50.0,
+        modePaiement: "CARTE_BANCAIRE",
+        dateExpiration: new Date(now.getFullYear() + 1, now.getMonth() - 2, 15),
+        statut: "A_JOUR",
+      },
+    }),
+    prisma.cotisation.create({
+      data: {
+        membreId: membres[8].id,
+        datePaiement: new Date(now.getFullYear(), now.getMonth() - 1, 10),
+        montant: 50.0,
+        modePaiement: "ESPECES",
+        dateExpiration: new Date(now.getFullYear() + 1, now.getMonth() - 1, 10),
+        statut: "A_JOUR",
+      },
+    }),
   ]);
-  console.log(`✓ ${cotisations.length} cotisations créées`);
+  console.log(`✓ ${cotisations.length} cotisations créées (dont alertes à 3, 5 et 8 jours)`);
 
   // ============================================
   // CRÉATION DES ÉVÉNEMENTS

@@ -2,6 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const { addYears, startOfDay, endOfDay, subDays } = require("date-fns");
 const { createError } = require("../utils/helpers");
 const cotisationService = require("../services/cotisationService");
+const emailService = require("../services/emailService");
 
 const prisma = new PrismaClient();
 
@@ -674,6 +675,44 @@ exports.deleteCotisation = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Cotisation supprimée",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Envoyer un rappel de cotisation par email
+ * @route   POST /api/cotisations/:id/rappel
+ * @access  Private (Admin)
+ */
+exports.envoyerRappel = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const cotisation = await prisma.cotisation.findUnique({
+      where: { id },
+      include: { membre: true },
+    });
+
+    if (!cotisation) {
+      throw createError("Cotisation introuvable", 404);
+    }
+
+    if (!cotisation.membre.email) {
+      throw createError("Le membre n'a pas d'adresse email", 400);
+    }
+
+    // Envoyer l'email de rappel
+    await emailService.sendCotisationRappelEmail(cotisation.membre, cotisation);
+
+    res.status(200).json({
+      success: true,
+      message: `Rappel envoyé à ${cotisation.membre.email}`,
+      data: {
+        email: cotisation.membre.email,
+        membre: `${cotisation.membre.prenom} ${cotisation.membre.nom}`,
+      },
     });
   } catch (error) {
     next(error);

@@ -131,6 +131,19 @@ router.get(
 );
 
 /**
+ * @route   POST /api/cotisations/:id/rappel
+ * @desc    Envoyer un email de rappel de cotisation
+ * @access  Private (Admin)
+ */
+router.post(
+  "/:id/rappel",
+  authMiddleware,
+  requireRole("ADMIN"),
+  validateGetCotisationById,
+  cotisationController.envoyerRappel
+);
+
+/**
  * @route   GET /api/cotisations/membre/:membreId
  * @desc    Récupérer les cotisations d'un membre spécifique
  * @access  Private (Admin ou propriétaire)

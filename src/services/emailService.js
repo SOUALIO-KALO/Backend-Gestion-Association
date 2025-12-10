@@ -20,7 +20,7 @@ class EmailService {
    * Charge tous les templates email au démarrage
    */
   loadTemplates() {
-    const templateFiles = ["welcome", "resetPassword", "passwordChanged"];
+    const templateFiles = ["welcome", "resetPassword", "passwordChanged", "rappelCotisation"];
 
     templateFiles.forEach((name) => {
       const templatePath = path.join(this.templatesDir, `${name}.hbs`);
@@ -121,6 +121,32 @@ class EmailService {
         dateModification: formatDateFR(new Date()),
         contactEmail: process.env.SMTP_USER || "contact@association.fr",
         associationName: "Notre Association",
+      },
+    });
+  }
+
+  /**
+   * Email de rappel de cotisation
+   * @param {Object} membre - Données du membre
+   * @param {Object} cotisation - Données de la cotisation
+   */
+  async sendCotisationRappelEmail(membre, cotisation) {
+    const joursRestants = Math.ceil(
+      (new Date(cotisation.dateExpiration) - new Date()) / (1000 * 60 * 60 * 24)
+    );
+
+    await this.sendEmail({
+      to: membre.email,
+      subject: `Rappel : Votre cotisation expire ${joursRestants > 0 ? `dans ${joursRestants} jours` : 'bientôt'}`,
+      template: "rappelCotisation",
+      data: {
+        prenom: membre.prenom,
+        nom: membre.nom,
+        dateExpiration: formatDateFR(cotisation.dateExpiration),
+        joursRestants: joursRestants > 0 ? joursRestants : 0,
+        montant: cotisation.montant,
+        associationName: "Notre Association",
+        contactEmail: process.env.SMTP_USER || "contact@association.fr",
       },
     });
   }
