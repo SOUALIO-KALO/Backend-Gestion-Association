@@ -511,7 +511,7 @@ exports.getCotisationById = async (req, res, next) => {
  */
 exports.createCotisation = async (req, res, next) => {
   try {
-    const { membreId, datePaiement, montant, modePaiement, periode, notes } = req.body;
+    const { membreId, datePaiement, montant, modePaiement, periode, dateExpiration: dateExpirationInput, notes } = req.body;
 
     // Vérifier que le membre existe
     const membre = await prisma.membre.findUnique({
@@ -522,23 +522,37 @@ exports.createCotisation = async (req, res, next) => {
       throw createError("Membre introuvable", 404);
     }
 
-    // Valider le format de la période (MM/YYYY)
-    if (!periode || !/^(0[1-9]|1[0-2])\/\d{4}$/.test(periode)) {
-      throw createError("Format de période invalide. Utilisez MM/YYYY (ex: 01/2024)", 400);
+    // Valider le format de la période si fournie (MM/YYYY)
+    let periodeValue = null;
+    if (periode) {
+      if (!/^(0[1-9]|1[0-2])\/\d{4}$/.test(periode)) {
+        throw createError("Format de période invalide. Utilisez MM/YYYY (ex: 01/2024)", 400);
+      }
+      
+      // Vérifier si une cotisation existe déjà pour ce membre et cette période
+      const existingCotisation = await prisma.cotisation.findFirst({
+        where: { membreId, periode },
+      });
+
+      if (existingCotisation) {
+        throw createError(`Une cotisation existe déjà pour la période ${periode}`, 409);
+      }
+      periodeValue = periode;
     }
 
-    // Vérifier si une cotisation existe déjà pour ce membre et cette période
-    const existingCotisation = await prisma.cotisation.findFirst({
-      where: { membreId, periode },
-    });
-
-    if (existingCotisation) {
-      throw createError(`Une cotisation existe déjà pour la période ${periode}`, 409);
+    // Déterminer la date d'expiration
+    let dateExpiration;
+    if (dateExpirationInput) {
+      // Utiliser la date d'expiration fournie
+      dateExpiration = new Date(dateExpirationInput);
+    } else if (periode) {
+      // Calculer la date d'expiration (fin du mois de la période)
+      const [mois, annee] = periode.split('/').map(Number);
+      dateExpiration = new Date(annee, mois, 0, 23, 59, 59); // Dernier jour du mois
+    } else {
+      // Par défaut: 1 an après la date de paiement
+      dateExpiration = addYears(new Date(datePaiement), 1);
     }
-
-    // Calculer la date d'expiration (fin du mois de la période)
-    const [mois, annee] = periode.split('/').map(Number);
-    const dateExpiration = new Date(annee, mois, 0, 23, 59, 59); // Dernier jour du mois
 
     const cotisation = await prisma.cotisation.create({
       data: {
@@ -547,7 +561,7 @@ exports.createCotisation = async (req, res, next) => {
         dateExpiration,
         montant: parseFloat(montant),
         modePaiement,
-        periode,
+        periode: periodeValue,
         notes: notes || null,
         statut: "A_JOUR",
       },
@@ -575,7 +589,7 @@ exports.createCotisation = async (req, res, next) => {
 exports.updateCotisation = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { datePaiement, montant, modePaiement, periode, notes, statut } = req.body;
+    const { datePaiement, montant, modePaiement, periode, dateExpiration, notes, statut } = req.body;
 
     const cotisation = await prisma.cotisation.findUnique({
       where: { id },
@@ -591,32 +605,30 @@ exports.updateCotisation = async (req, res, next) => {
     if (modePaiement) updateData.modePaiement = modePaiement;
     if (notes !== undefined) updateData.notes = notes;
     if (statut) updateData.statut = statut;
+    if (dateExpiration) updateData.dateExpiration = new Date(dateExpiration);
 
-    // Gérer la période
-    if (periode) {
-      // Valider le format
-      if (!/^(0[1-9]|1[0-2])\/\d{4}$/.test(periode)) {
+    // Gérer la période si fournie
+    if (periode !== undefined) {
+      if (periode && !/^(0[1-9]|1[0-2])\/\d{4}$/.test(periode)) {
         throw createError("Format de période invalide. Utilisez MM/YYYY (ex: 01/2024)", 400);
       }
       
-      // Vérifier si une autre cotisation existe déjà pour cette période
-      const existingCotisation = await prisma.cotisation.findFirst({
-        where: { 
-          membreId: cotisation.membreId, 
-          periode,
-          id: { not: id }
-        },
-      });
+      if (periode) {
+        // Vérifier si une autre cotisation existe déjà pour cette période
+        const existingCotisation = await prisma.cotisation.findFirst({
+          where: { 
+            membreId: cotisation.membreId, 
+            periode,
+            id: { not: id }
+          },
+        });
 
-      if (existingCotisation) {
-        throw createError(`Une cotisation existe déjà pour la période ${periode}`, 409);
+        if (existingCotisation) {
+          throw createError(`Une cotisation existe déjà pour la période ${periode}`, 409);
+        }
       }
 
-      updateData.periode = periode;
-      
-      // Recalculer la date d'expiration basée sur la période
-      const [mois, annee] = periode.split('/').map(Number);
-      updateData.dateExpiration = new Date(annee, mois, 0, 23, 59, 59);
+      updateData.periode = periode || null;
     }
 
     const updated = await prisma.cotisation.update({
