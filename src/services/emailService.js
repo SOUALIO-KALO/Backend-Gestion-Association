@@ -10,6 +10,12 @@ const { formatDateFR } = require("../utils/helpers");
 // Initialiser Resend si la clé API est disponible
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+if (resend) {
+  console.log("✅ Resend configuré avec succès");
+} else {
+  console.log("⚠️ RESEND_API_KEY non configurée - mode SMTP/simulation");
+}
+
 /**
  * Service d'envoi d'emails
  */
@@ -55,16 +61,23 @@ class EmailService {
     // Utiliser Resend si disponible
     if (resend) {
       try {
+        console.log(`📤 [Resend] Envoi en cours à ${to}...`);
         const result = await resend.emails.send({
           from: process.env.RESEND_FROM || "Association <onboarding@resend.dev>",
           to: [to],
           subject,
           html,
         });
-        console.log(`📧 [Resend] Email envoyé à ${to}: ${result.data?.id}`);
+        
+        if (result.error) {
+          console.error(`❌ [Resend] Erreur API:`, result.error);
+          throw new Error(result.error.message || "Erreur Resend");
+        }
+        
+        console.log(`✅ [Resend] Email envoyé à ${to} - ID: ${result.data?.id}`);
         return result;
       } catch (error) {
-        console.error("❌ [Resend] Erreur:", error.message);
+        console.error("❌ [Resend] Erreur:", error);
         throw error;
       }
     }
