@@ -4,7 +4,7 @@
   "description": "API REST pour la gestion associative",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "prisma db push --accept-data-loss && node server.js",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "migrate-and-seed": "node migrate-and-seed.js",

@@ -11,6 +11,9 @@ const { errorHandler, notFoundHandler } = require("./middlewares/errorHandler");
 
 const app = express();
 
+// Trust proxy pour Render/Heroku (nécessaire pour express-rate-limit)
+app.set('trust proxy', 1);
+
 // ============================================
 // MIDDLEWARES DE SÉCURITÉ
 // ============================================
