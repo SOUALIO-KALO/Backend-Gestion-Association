@@ -703,8 +703,30 @@ exports.envoyerRappel = async (req, res, next) => {
       throw createError("Le membre n'a pas d'adresse email", 400);
     }
 
-    // Envoyer l'email de rappel
-    await emailService.sendCotisationRappelEmail(cotisation.membre, cotisation);
+    // Vérifier si le service email est configuré
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+      // En mode dev ou sans config email, simuler l'envoi
+      console.log(`📧 [SIMULATION] Rappel envoyé à ${cotisation.membre.email}`);
+      return res.status(200).json({
+        success: true,
+        message: `Rappel simulé pour ${cotisation.membre.email} (email non configuré)`,
+        data: {
+          email: cotisation.membre.email,
+          membre: `${cotisation.membre.prenom} ${cotisation.membre.nom}`,
+          simulated: true,
+        },
+      });
+    }
+
+    // Envoyer l'email de rappel avec timeout
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Timeout envoi email")), 10000)
+    );
+
+    await Promise.race([
+      emailService.sendCotisationRappelEmail(cotisation.membre, cotisation),
+      timeoutPromise
+    ]);
 
     res.status(200).json({
       success: true,
@@ -715,6 +737,13 @@ exports.envoyerRappel = async (req, res, next) => {
       },
     });
   } catch (error) {
+    // Gérer le timeout spécifiquement
+    if (error.message === "Timeout envoi email") {
+      return res.status(503).json({
+        success: false,
+        message: "Le serveur email ne répond pas. Veuillez réessayer plus tard.",
+      });
+    }
     next(error);
   }
 };
