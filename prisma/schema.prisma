@@ -47,25 +47,25 @@ enum StatutInscription {
 
 /// Table des membres de l'association
 model Membre {
-  id            String         @id @default(uuid())
-  nom           String         @db.VarChar(100)
-  prenom        String         @db.VarChar(100)
-  email         String         @unique @db.VarChar(255)
-  telephone     String?        @db.VarChar(20)
-  motDePasse    String         @map("mot_de_passe")
-  role          Role           @default(MEMBRE)
-  statut        StatutMembre   @default(ACTIF)
-  dateCreation  DateTime       @default(now()) @map("date_creation")
-  dateModification DateTime    @updatedAt @map("date_modification")
-  
+  id               String       @id @default(uuid())
+  nom              String       @db.VarChar(100)
+  prenom           String       @db.VarChar(100)
+  email            String       @unique @db.VarChar(255)
+  telephone        String?      @db.VarChar(20)
+  motDePasse       String       @map("mot_de_passe")
+  role             Role         @default(MEMBRE)
+  statut           StatutMembre @default(ACTIF)
+  dateCreation     DateTime     @default(now()) @map("date_creation")
+  dateModification DateTime     @updatedAt @map("date_modification")
+
   // Token pour réinitialisation mot de passe
-  resetToken          String?   @map("reset_token")
+  resetToken           String?   @map("reset_token")
   resetTokenExpiration DateTime? @map("reset_token_expiration")
-  
+
   // Relations
-  cotisations   Cotisation[]
-  inscriptions  Inscription[]
-  evenementsCrees Evenement[] @relation("CreateurEvenement")
+  cotisations     Cotisation[]
+  inscriptions    Inscription[]
+  evenementsCrees Evenement[]   @relation("CreateurEvenement")
 
   @@index([email])
   @@index([statut])
@@ -75,17 +75,18 @@ model Membre {
 
 /// Table des cotisations
 model Cotisation {
-  id              String           @id @default(uuid())
-  membreId        String           @map("membre_id")
-  datePaiement    DateTime         @map("date_paiement")
-  montant         Decimal          @db.Decimal(10, 2)
-  modePaiement    ModePaiement     @map("mode_paiement")
-  dateExpiration  DateTime         @map("date_expiration")
-  statut          StatutCotisation @default(EN_ATTENTE)
-  reference       String           @unique @default(uuid()) // Référence pour le reçu
-  notes           String?          @db.Text
-  dateCreation    DateTime         @default(now()) @map("date_creation")
-  dateModification DateTime        @updatedAt @map("date_modification")
+  id               String           @id @default(uuid())
+  membreId         String           @map("membre_id")
+  datePaiement     DateTime         @map("date_paiement")
+  montant          Decimal          @db.Decimal(10, 2)
+  modePaiement     ModePaiement     @map("mode_paiement")
+  periode          String?          @db.VarChar(7) // Format: MM/YYYY (ex: 01/2024) - Optionnel pour les anciennes cotisations
+  dateExpiration   DateTime         @map("date_expiration")
+  statut           StatutCotisation @default(EN_ATTENTE)
+  reference        String           @unique @default(uuid()) // Référence pour le reçu
+  notes            String?          @db.Text
+  dateCreation     DateTime         @default(now()) @map("date_creation")
+  dateModification DateTime         @updatedAt @map("date_modification")
 
   // Relations
   membre Membre @relation(fields: [membreId], references: [id], onDelete: Cascade)
@@ -99,18 +100,18 @@ model Cotisation {
 
 /// Table des événements
 model Evenement {
-  id              String    @id @default(uuid())
-  titre           String    @db.VarChar(200)
-  description     String?   @db.Text
-  dateDebut       DateTime  @map("date_debut")
-  dateFin         DateTime? @map("date_fin")
-  lieu            String    @db.VarChar(255)
-  placesTotal     Int       @map("places_total")
-  placesRestantes Int       @map("places_restantes")
-  createurId      String    @map("createur_id")
-  estPublie       Boolean   @default(true) @map("est_publie")
-  dateCreation    DateTime  @default(now()) @map("date_creation")
-  dateModification DateTime @updatedAt @map("date_modification")
+  id               String    @id @default(uuid())
+  titre            String    @db.VarChar(200)
+  description      String?   @db.Text
+  dateDebut        DateTime  @map("date_debut")
+  dateFin          DateTime? @map("date_fin")
+  lieu             String    @db.VarChar(255)
+  placesTotal      Int       @map("places_total")
+  placesRestantes  Int       @map("places_restantes")
+  createurId       String    @map("createur_id")
+  estPublie        Boolean   @default(true) @map("est_publie")
+  dateCreation     DateTime  @default(now()) @map("date_creation")
+  dateModification DateTime  @updatedAt @map("date_modification")
 
   // Relations
   createur     Membre        @relation("CreateurEvenement", fields: [createurId], references: [id])

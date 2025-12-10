@@ -14,11 +14,22 @@ exports.getAllEvenements = async (req, res, next) => {
     const page = parseInt(req.query.page || 1);
     const limit = parseInt(req.query.limit || 10);
     const skip = (page - 1) * limit;
+    const membreId = req.user?.id;
 
     const evenements = await prisma.evenement.findMany({
       skip,
       take: limit,
       orderBy: { dateDebut: "desc" },
+      include: {
+        inscriptions: {
+          where: membreId ? { membreId } : undefined,
+          select: {
+            id: true,
+            membreId: true,
+            statut: true,
+          },
+        },
+      },
     });
 
     const total = await prisma.evenement.count();
