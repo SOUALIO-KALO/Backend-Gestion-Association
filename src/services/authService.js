@@ -63,13 +63,10 @@ class AuthService {
       role: membre.role,
     });
 
-    // Envoyer l'email de bienvenue
-    try {
-      await emailService.sendWelcomeEmail(membre);
-    } catch (error) {
-      console.error("Erreur envoi email bienvenue:", error);
-      // On ne bloque pas l'inscription si l'email échoue
-    }
+    // Envoyer l'email de bienvenue en arrière-plan (ne bloque pas la réponse)
+    emailService.sendWelcomeEmail(membre).catch((error) => {
+      console.error("Erreur envoi email bienvenue:", error.message);
+    });
 
     return {
       membre: sanitizeObject(membre),
