@@ -6,6 +6,7 @@ const authRoutes = require("./authRoutes");
 const membreRoutes = require("./membreRoutes");
 const cotisationRoutes = require("./cotisationRoutes");
 const evenementRoutes = require("./evenementRoutes");
+const adminRoutes = require("./adminRoutes");
 
 // ============================================
 // DÉFINITION DES ROUTES
@@ -15,6 +16,7 @@ router.use("/auth", authRoutes);
 router.use("/membres", membreRoutes);
 router.use("/cotisations", cotisationRoutes);
 router.use("/evenements", evenementRoutes);
+router.use("/admin", adminRoutes);
 
 // Route d'information API
 router.get("/", (req, res) => {
