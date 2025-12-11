@@ -122,20 +122,12 @@ exports.getCotisationsExpirees = async (req, res, next) => {
 exports.getCotisationsProchesExpiration = async (req, res, next) => {
   try {
     const joursAlerte = parseInt(req.query.jours || 30);
-    const today = new Date();
-    const alerteDate = addYears(subDays(today, -joursAlerte), 0);
 
-    const cotisations = await prisma.cotisation.findMany({
-      where: {
-        statut: "A_JOUR",
-        dateExpiration: {
-          lte: alerteDate,
-          gte: today,
-        },
-      },
-      include: { membre: true },
-      orderBy: { dateExpiration: "asc" },
-    });
+    // Utilise le service qui ne renvoie que la dernière cotisation A_JOUR
+    // par membre, et uniquement si elle tombe dans la fenêtre d'alerte.
+    const cotisations = await cotisationService.getCotisationsProchesExpiration(
+      joursAlerte
+    );
 
     res.status(200).json({
       success: true,

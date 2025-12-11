@@ -341,15 +341,14 @@ class CotisationService {
    * @returns {Promise<Array>} Liste des cotisations proches de l'expiration
    */
   async getCotisationsProchesExpiration(jours = 30) {
-    const dateDebut = new Date();
-    const dateFin = addDays(new Date(), jours);
+    const maintenant = new Date();
+    const limite = addDays(new Date(), jours);
 
-    const cotisations = await prisma.cotisation.findMany({
+    // On récupère toutes les cotisations A_JOUR, triées par membre puis par
+    // date d'expiration décroissante. Ensuite, on garde uniquement la
+    // dernière cotisation de chaque membre et on filtre par fenêtre d'alerte.
+    const toutesCotisations = await prisma.cotisation.findMany({
       where: {
-        dateExpiration: {
-          gte: dateDebut,
-          lte: dateFin,
-        },
         statut: "A_JOUR",
       },
       include: {
@@ -363,12 +362,28 @@ class CotisationService {
           },
         },
       },
-      orderBy: {
-        dateExpiration: "asc",
-      },
+      orderBy: [
+        { membreId: "asc" },
+        { dateExpiration: "desc" },
+      ],
     });
 
-    return cotisations;
+    const vus = new Set();
+    const resultats = [];
+
+    for (const cotisation of toutesCotisations) {
+      if (vus.has(cotisation.membreId)) continue;
+      vus.add(cotisation.membreId);
+
+      if (
+        cotisation.dateExpiration >= maintenant &&
+        cotisation.dateExpiration <= limite
+      ) {
+        resultats.push(cotisation);
+      }
+    }
+
+    return resultats;
   }
 
   /**
