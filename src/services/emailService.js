@@ -3,17 +3,18 @@
 const fs = require("fs");
 const path = require("path");
 const handlebars = require("handlebars");
-const { Resend } = require("resend");
+const Brevo = require("@getbrevo/brevo");
 const { transporter, emailFrom } = require("../config/email");
 const { formatDateFR } = require("../utils/helpers");
 
-// Initialiser Resend si la clé API est disponible
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-
-if (resend) {
-  console.log("✅ Resend configuré avec succès");
+// Initialiser Brevo si la clé API est disponible
+let brevoClient = null;
+if (process.env.BREVO_API_KEY) {
+  brevoClient = new Brevo.TransactionalEmailsApi();
+  brevoClient.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+  console.log("✅ Brevo configuré avec succès");
 } else {
-  console.log("⚠️ RESEND_API_KEY non configurée - mode SMTP/simulation");
+  console.log("⚠️ BREVO_API_KEY non configurée - mode SMTP/simulation");
 }
 
 /**
@@ -58,27 +59,26 @@ class EmailService {
       html = `<p>${data.message || "Message de l'association"}</p>`;
     }
 
-    // Utiliser Resend si disponible
-    if (resend) {
+    // Utiliser Brevo si disponible
+    if (brevoClient) {
       try {
-        console.log(`📤 [Resend] Envoi en cours à ${to}...`);
-        const result = await resend.emails.send({
-          from: process.env.RESEND_FROM || "Association <onboarding@resend.dev>",
-          to: [to],
-          subject,
-          html,
-        });
+        console.log(`📤 [Brevo] Envoi en cours à ${to}...`);
         
-        if (result.error) {
-          console.error(`❌ [Resend] Erreur API:`, result.error);
-          throw new Error(result.error.message || "Erreur Resend");
-        }
+        const sendSmtpEmail = new Brevo.SendSmtpEmail();
+        sendSmtpEmail.subject = subject;
+        sendSmtpEmail.htmlContent = html;
+        sendSmtpEmail.sender = { 
+          name: process.env.BREVO_SENDER_NAME || "Association", 
+          email: process.env.BREVO_SENDER_EMAIL || "noreply@association.fr" 
+        };
+        sendSmtpEmail.to = [{ email: to }];
         
-        console.log(`✅ [Resend] Email envoyé à ${to} - ID: ${result.data?.id}`);
+        const result = await brevoClient.sendTransacEmail(sendSmtpEmail);
+        console.log(`✅ [Brevo] Email envoyé à ${to} - ID: ${result.messageId}`);
         return result;
       } catch (error) {
-        console.error("❌ [Resend] Erreur:", error);
-        throw error;
+        console.error("❌ [Brevo] Erreur:", error.body || error.message);
+        throw new Error(error.body?.message || error.message || "Erreur Brevo");
       }
     }
 

@@ -23,6 +23,7 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "@prisma/client": "6.19.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
