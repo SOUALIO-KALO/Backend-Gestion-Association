@@ -61,7 +61,9 @@ const registerValidation = [
     .withMessage("Le prénom contient des caractères non autorisés"),
 
   body("telephone")
-    .optional({ nullable: true, checkFalsy: true })
+    .notEmpty()
+    .withMessage("Le téléphone est requis")
+    .bail()
     .trim()
     .matches(/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/)
     .withMessage("Format de téléphone invalide"),
