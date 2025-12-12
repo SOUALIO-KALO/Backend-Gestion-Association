@@ -51,7 +51,7 @@ model Membre {
   nom              String       @db.VarChar(100)
   prenom           String       @db.VarChar(100)
   email            String       @unique @db.VarChar(255)
-  telephone        String?      @unique @db.VarChar(20)
+  telephone        String?      @db.VarChar(20)
   motDePasse       String       @map("mot_de_passe")
   role             Role         @default(MEMBRE)
   statut           StatutMembre @default(ACTIF)
