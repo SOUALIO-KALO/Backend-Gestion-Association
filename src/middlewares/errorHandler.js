@@ -238,6 +238,8 @@ const errorHandler = (err, req, res, next) => {
       success: false,
       code: err.code || "APP_ERROR",
       message: err.message,
+      // Exposer directement le champ concerné si fourni dans details
+      ...(err.details?.field && { field: err.details.field }),
       ...(err.details && { details: err.details }),
     });
   }

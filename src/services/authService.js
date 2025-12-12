@@ -36,7 +36,21 @@ class AuthService {
     });
 
     if (existingMembre) {
-      throw createError(ERRORS.EMAIL_EXISTS, 409);
+      // Inclure le champ pour un mapping précis côté frontend
+      throw createError(ERRORS.EMAIL_EXISTS, 409, { field: "email" });
+    }
+
+    // Vérifier si le téléphone est déjà utilisé (si fourni)
+    if (telephone) {
+      const existingTel = await prisma.membre.findFirst({
+        where: { telephone },
+      });
+
+      if (existingTel) {
+        throw createError("Ce numéro de téléphone est déjà utilisé", 409, {
+          field: "telephone",
+        });
+      }
     }
 
     // Hasher le mot de passe
