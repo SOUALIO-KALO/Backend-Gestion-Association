@@ -303,10 +303,17 @@ exports.genererRecuPDF = async (req, res, next) => {
     };
 
     const formatMontant = (montant) => {
-      const formatted = new Intl.NumberFormat("fr-FR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(montant);
+      const raw = montant?.toString ? montant.toString() : String(montant ?? "");
+      const normalized = raw.replace(",", ".");
+      const [intPartRaw, decPartRaw] = normalized.split(".");
+
+      const intPart = intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      const decPart =
+        decPartRaw && !/^0+$/.test(decPartRaw)
+          ? decPartRaw.padEnd(2, "0").slice(0, 2)
+          : null;
+
+      const formatted = decPart ? `${intPart},${decPart}` : intPart;
       return `${formatted} FCFA`;
     };
 

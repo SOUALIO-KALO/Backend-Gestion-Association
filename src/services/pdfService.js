@@ -236,7 +236,7 @@ class PDFService {
     doc
       .fontSize(24)
       .font("Helvetica-Bold")
-      .text(`${parseFloat(montant).toFixed(2)} FCFA`, 65, startY + 28);
+      .text(`${parseFloat(montant).toFixed(0)} FCFA`, 65, startY + 28);
 
     doc.moveDown();
   }
